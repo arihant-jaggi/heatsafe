@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Miami Beach barrier island",
+        "note": "Full island from South Point (25.7617) to Bal Harbour (25.9000)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-80.16, 25.7617],
+            [-80.11, 25.7617],
+            [-80.11, 25.9000],
+            [-80.16, 25.9000],
+            [-80.16, 25.7617]
+          ]
+        ]
+      }
+    }
+  ]
+}

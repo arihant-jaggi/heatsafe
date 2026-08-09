@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "properties": {"name": "Flamingo-Lummus (approx)"},
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-80.1419, 25.8006],
+        [-80.1242, 25.8006],
+        [-80.1242, 25.7772],
+        [-80.1419, 25.7772],
+        [-80.1419, 25.8006]
+      ]]
+    }
+  }]
+}

@@ -1,0 +1,20 @@
+# --- secrets ---
+.env
+.env.*
+!.env.example
+
+# --- backend (Python) ---
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+backend/.venv/
+backend/venv/
+
+# large/regeneratable backend data
+backend/data/*.geojson
+backend/data/*.graphml
+backend/cache/
+
+# --- frontend (Node) ---
+frontend/node_modules/
+frontend/dist/
