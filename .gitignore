@@ -10,9 +10,9 @@ backend/__pycache__/
 backend/.venv/
 backend/venv/
 
-# large/regeneratable backend data
-backend/data/*.geojson
-backend/data/*.graphml
+# Regeneratable runtime response cache (geocode/route). NOT the graph/building/
+# tree data files below — those are committed so Render loads from disk instead
+# of hitting Overpass at startup (which Render's network policy blocks).
 backend/cache/
 
 # --- frontend (Node) ---

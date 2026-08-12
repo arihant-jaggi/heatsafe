@@ -25,7 +25,7 @@ from .cache import geocode_cache, route_cache
 from .weather import get_conditions, Conditions
 from .shadows import prepare_shade_inputs, build_shade_index, sun_position
 from .routing import (
-    _load_polygon, fetch_walk_graph, graph_to_gdfs,
+    _load_polygon, graph_to_gdfs,
     precompute_edge_samples, score_edges_from_samples, attach_edge_weights_timeaware,
     shortest_path, route_geojson_and_metrics, route_via_node, best_cooling_via,
     mrt_celsius,
@@ -61,27 +61,19 @@ class RouteRequest(BaseModel):
     via_cooling: bool = False
 
 
-def _load_buildings(polygon) -> gpd.GeoDataFrame:
-    """Building footprints (with height tags) for the neighborhood.
+def _load_buildings() -> gpd.GeoDataFrame:
+    """Building footprints (with height tags), loaded from the committed file.
 
-    Cached to disk after the first OSM fetch so restarts are instant and the app
-    still works offline once primed.
+    Never fetched at runtime: Render blocks outbound connections during the
+    startup sequence, so the graph/buildings must already be on disk (generated
+    locally via ``scripts/preprocess.py`` and committed to the repo).
     """
-    if BUILDINGS_PATH.exists():
-        return gpd.read_file(BUILDINGS_PATH).to_crs("EPSG:4326")
-    try:
-        b = ox.features_from_polygon(polygon, {"building": True})
-        b = b[b.geometry.notna()]
-        b = b[b.geometry.geom_type.isin(["Polygon", "MultiPolygon"])].to_crs("EPSG:4326")
-        keep = [c for c in ["height", "building:levels", "name", "geometry"] if c in b.columns]
-        b = b.reset_index()[keep] if keep else b.reset_index()
-        try:
-            b.to_file(BUILDINGS_PATH, driver="GeoJSON")
-        except Exception:
-            pass
-        return b
-    except Exception:
-        return gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
+    if not BUILDINGS_PATH.exists():
+        raise RuntimeError(
+            f"Missing {BUILDINGS_PATH}. Run `python scripts/preprocess.py` locally "
+            "and commit the generated file — buildings are never fetched at runtime."
+        )
+    return gpd.read_file(BUILDINGS_PATH).to_crs("EPSG:4326")
 
 
 def _init_once():
@@ -94,19 +86,22 @@ def _init_once():
     STATE["lat"], STATE["lon"] = float(centroid.y), float(centroid.x)
     STATE["tz"] = ZoneInfo(LOCAL_TZ)
 
-    # Load or build the walking graph.
-    if GRAPH_PATH.exists():
-        G = ox.load_graphml(GRAPH_PATH)
-    else:
-        G = fetch_walk_graph(polygon)
-        ox.save_graphml(G, GRAPH_PATH)
+    # Load the walking graph from disk only. Never fetched at runtime: Render
+    # blocks outbound connections during startup, so a missing graph must fail
+    # loudly rather than silently trying (and hanging on) an Overpass call.
+    if not GRAPH_PATH.exists():
+        raise RuntimeError(
+            f"Missing {GRAPH_PATH}. Run `python scripts/preprocess.py` locally "
+            "and commit the generated file — the graph is never fetched at runtime."
+        )
+    G = ox.load_graphml(GRAPH_PATH)
 
     # Static layers: trees (canopy) + buildings (for dynamic shadows).
     if TREES_PATH.exists():
         trees = gpd.read_file(TREES_PATH).to_crs("EPSG:4326")
     else:
         trees = gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
-    buildings = _load_buildings(polygon)
+    buildings = _load_buildings()
 
     nodes, edges = graph_to_gdfs(G)
 
