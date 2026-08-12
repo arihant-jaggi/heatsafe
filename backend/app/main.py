@@ -17,9 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from .settings import (
-    NBHD_PATH, TREES_PATH, GRAPH_PATH, BUILDINGS_PATH,
+    NBHD_PATH, TREES_PATH, GRAPH_PATH, BUILDINGS_PATH, COOLING_POIS_PATH,
     DEFAULT_ALPHA, DEFAULT_BETA, LOCAL_TZ,
-    COOLING_TAGS, COOLING_MAX_DETOUR_RATIO, COOLING_MAX_CANDIDATES,
+    COOLING_MAX_DETOUR_RATIO, COOLING_MAX_CANDIDATES,
 )
 from .cache import geocode_cache, route_cache
 from .weather import get_conditions, Conditions
@@ -76,6 +76,19 @@ def _load_buildings() -> gpd.GeoDataFrame:
     return gpd.read_file(BUILDINGS_PATH).to_crs("EPSG:4326")
 
 
+def _load_cooling_pois() -> gpd.GeoDataFrame:
+    """Cooling-station POIs (pharmacies, libraries, malls, …), from the committed file.
+
+    Never fetched at runtime — same reasoning and pattern as ``_load_buildings``.
+    """
+    if not COOLING_POIS_PATH.exists():
+        raise RuntimeError(
+            f"Missing {COOLING_POIS_PATH}. Run `python scripts/preprocess.py` locally "
+            "and commit the generated file — cooling POIs are never fetched at runtime."
+        )
+    return gpd.read_file(COOLING_POIS_PATH).to_crs("EPSG:4326")
+
+
 def _init_once():
     if STATE.get("ready"):
         return
@@ -102,6 +115,7 @@ def _init_once():
     else:
         trees = gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
     buildings = _load_buildings()
+    cooling_gdf = _load_cooling_pois()
 
     nodes, edges = graph_to_gdfs(G)
 
@@ -111,6 +125,7 @@ def _init_once():
     STATE["edge_samples"] = precompute_edge_samples(edges)
 
     STATE["G"] = G
+    STATE["cooling_gdf"] = cooling_gdf
     STATE["trees_loaded"] = len(trees)
     STATE["buildings_loaded"] = len(buildings)
     STATE["scored_cache"] = {}   # keyed by (date_str, hour) -> (edges_scored, conditions, solar)
@@ -231,21 +246,12 @@ def _clean(v: Any) -> Optional[str]:
 
 
 def _cooling_gdf() -> gpd.GeoDataFrame:
-    """Air-conditioned cooling stops (+ shady parks) inside the neighborhood."""
-    if "cooling_gdf" in STATE:
-        return STATE["cooling_gdf"]
-    polygon = STATE["polygon"]
-    try:
-        gdf = ox.features_from_polygon(polygon, COOLING_TAGS)
-    except Exception:
-        gdf = None
-    if gdf is None or len(gdf) == 0:
-        gdf = gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
-    else:
-        gdf = gdf.reset_index()
-        gdf = gdf[gdf.geometry.notna()].to_crs("EPSG:4326")
-    STATE["cooling_gdf"] = gdf
-    return gdf
+    """Air-conditioned cooling stops (+ shady parks) inside the neighborhood.
+
+    Pre-loaded from disk at startup (see ``_load_cooling_pois``) — never
+    fetched here.
+    """
+    return STATE["cooling_gdf"]
 
 
 def _cooling_nodes() -> List[Dict[str, Any]]:

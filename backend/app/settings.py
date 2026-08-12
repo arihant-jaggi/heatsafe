@@ -11,6 +11,7 @@ ISLAND_BBOX = (-80.16, 25.7617, -80.11, 25.9000)
 TREES_PATH = DATA_DIR / "trees.geojson"
 GRAPH_PATH = DATA_DIR / "graph.graphml"
 BUILDINGS_PATH = DATA_DIR / "buildings.geojson"
+COOLING_POIS_PATH = DATA_DIR / "cooling_pois.geojson"
 
 # Miami Beach is UTM zone 17N (meters). Good for buffering/sampling.
 PROJECT_CRS = "EPSG:32617"
