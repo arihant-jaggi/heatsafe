@@ -20,7 +20,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <header className="nav">
         <div className="nav-inner">
           <Link to="/" className="brand">
-            <span className="brand-logo"><span>HS</span></span>
+            <img src="/logo.svg" alt="HeatSafe" className="brand-logo" />
             <span className="stack">
               <span className="brand-name">HeatSafe <b>Routes</b></span>
               <span className="brand-sub">Miami Beach</span>
