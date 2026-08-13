@@ -1,7 +1,9 @@
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export type LatLon = { lat: number; lon: number };
 
 export async function geocode(q: string) {
-  const r = await fetch(`http://localhost:8000/geocode?q=${encodeURIComponent(q)}`);
+  const r = await fetch(`${BASE_URL}/geocode?q=${encodeURIComponent(q)}`);
   if (!r.ok) throw new Error("geocode failed");
   return r.json();
 }
@@ -14,7 +16,7 @@ export type RouteOpts = {
 // alpha/beta (time vs heat-penalty weights) are hardcoded server-side.
 export async function route(start: LatLon, end: LatLon, opts: RouteOpts = {}) {
   const { hour = null, via_cooling = false } = opts;
-  const r = await fetch(`http://localhost:8000/route`, {
+  const r = await fetch(`${BASE_URL}/route`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ start, end, hour, via_cooling })
@@ -24,14 +26,14 @@ export async function route(start: LatLon, end: LatLon, opts: RouteOpts = {}) {
 }
 
 export async function cooling() {
-  const r = await fetch(`http://localhost:8000/cooling`);
+  const r = await fetch(`${BASE_URL}/cooling`);
   if (!r.ok) throw new Error("cooling failed");
   return r.json();
 }
 
 export async function conditions(hour: number | null = null) {
   const qs = hour === null ? "" : `?hour=${hour}`;
-  const r = await fetch(`http://localhost:8000/conditions${qs}`);
+  const r = await fetch(`${BASE_URL}/conditions${qs}`);
   if (!r.ok) throw new Error("conditions failed");
   return r.json();
 }
