@@ -36,7 +36,12 @@ app = FastAPI(title="HeatSafe Routes API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "https://heatsafe.co",
+        "https://www.heatsafe.co",
+        "https://heatsafe-pearl.vercel.app",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
