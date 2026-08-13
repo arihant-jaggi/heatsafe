@@ -189,10 +189,15 @@ class EdgeSamples:
 
 def precompute_edge_samples(edges_gdf: gpd.GeoDataFrame,
                             sample_step_m: float = SAMPLE_STEP_M) -> EdgeSamples:
-    """Project edges to meters and pre-sample points along each (startup, once)."""
+    """Project edges to meters and pre-sample points along each (startup, once).
+
+    float32 throughout: routing weights don't need float64 precision, and this
+    array is held for the app's whole lifetime, so halving it matters on
+    Render's 512MB tier.
+    """
     proj = edges_gdf.to_crs(PROJECT_CRS)
-    lengths = edges_gdf["length"].to_numpy(dtype=float)
-    time_min = (lengths / WALK_SPEED_MPS) / 60.0
+    lengths = edges_gdf["length"].to_numpy(dtype=np.float32)
+    time_min = (lengths / np.float32(WALK_SPEED_MPS) / np.float32(60.0)).astype(np.float32)
 
     all_pts: List[Point] = []
     pt_edge_idx: List[int] = []
@@ -221,33 +226,42 @@ def score_edges_from_samples(es: EdgeSamples, shade: ShadeGeometry, cond: Condit
     """Score every edge for one instant: shade fraction, MRT, and heat penalty.
 
     Vectorized end-to-end — one STRtree query over all sample points, a bincount
-    to get per-edge shade fraction, then numpy MRT/penalty math.
+    to get per-edge shade fraction, then numpy MRT/penalty math. Kept in float32:
+    this DataFrame is discarded immediately after its values are written into the
+    graph (see attach_edge_weights_timeaware), but it still peaks at ~5 float
+    columns x ~42k edges while it's alive, so halving it caps that peak.
     """
     n_edges = len(es.index)
+    f32 = np.float32
 
     if shade.tree is None or es.all_pts.size == 0:
-        frac = np.zeros(n_edges)
+        frac = np.zeros(n_edges, dtype=f32)
     else:
         # query returns [input_idx, tree_idx] pairs; input_idx are shaded points.
         hits = shade.tree.query(es.all_pts, predicate="intersects")
         shaded_mask = np.zeros(es.all_pts.size, dtype=bool)
         shaded_mask[hits[0]] = True
-        shaded = np.bincount(es.pt_edge_idx, weights=shaded_mask.astype(float), minlength=n_edges)
-        frac = np.where(es.sample_count > 0, shaded / np.maximum(es.sample_count, 1), 0.0)
+        shaded = np.bincount(es.pt_edge_idx, weights=shaded_mask.astype(f32), minlength=n_edges)
+        frac = np.where(es.sample_count > 0, shaded / np.maximum(es.sample_count, 1), 0.0).astype(f32)
 
     # Vectorized MRT (see mrt_celsius for the model); shade attenuates shortwave.
-    ta_k = cond.air_temp_c + 273.15
-    s_global = cond.direct_rad + cond.diffuse_rad
-    s_open = (MRT_PROJECTED_AREA_FACTOR * cond.direct_rad
-              + 0.5 * cond.diffuse_rad
-              + 0.5 * GROUND_ALBEDO * s_global)
-    s_abs = MRT_SW_ABSORPTION * s_open * (1.0 - SHADE_SHORTWAVE_BLOCK * frac)
-    r_long = MRT_EMISSIVITY * STEFAN_BOLTZMANN * ta_k ** 4
-    mrt = ((r_long + s_abs) / (MRT_EMISSIVITY * STEFAN_BOLTZMANN)) ** 0.25 - 273.15
+    # cond.* are plain Python floats (scalars), so casting them to float32 keeps
+    # every array operation below in float32 rather than upcasting to float64.
+    air_temp_c = f32(cond.air_temp_c)
+    direct_rad = f32(cond.direct_rad)
+    diffuse_rad = f32(cond.diffuse_rad)
+    ta_k = air_temp_c + f32(273.15)
+    s_global = direct_rad + diffuse_rad
+    s_open = (f32(MRT_PROJECTED_AREA_FACTOR) * direct_rad
+              + f32(0.5) * diffuse_rad
+              + f32(0.5) * f32(GROUND_ALBEDO) * s_global)
+    s_abs = (f32(MRT_SW_ABSORPTION) * s_open * (f32(1.0) - f32(SHADE_SHORTWAVE_BLOCK) * frac)).astype(f32)
+    r_long = f32(MRT_EMISSIVITY) * f32(STEFAN_BOLTZMANN) * ta_k ** 4
+    mrt = (((r_long + s_abs) / (f32(MRT_EMISSIVITY) * f32(STEFAN_BOLTZMANN))) ** f32(0.25) - f32(273.15)).astype(f32)
 
-    excess = np.maximum(0.0, mrt - cond.air_temp_c)
-    sun_min = (1.0 - frac) * es.time_min
-    penalty = es.time_min * (1.0 + excess / MRT_REF_EXCESS_C)
+    excess = np.maximum(f32(0.0), mrt - air_temp_c).astype(f32)
+    sun_min = ((f32(1.0) - frac) * es.time_min).astype(f32)
+    penalty = (es.time_min * (f32(1.0) + excess / f32(MRT_REF_EXCESS_C))).astype(f32)
 
     return pd.DataFrame(
         {

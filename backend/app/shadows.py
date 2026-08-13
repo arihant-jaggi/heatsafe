@@ -151,7 +151,7 @@ def prepare_shade_inputs(
 
     return ShadeInputs(
         bld_geoms=np.array(bgeoms, dtype=object),
-        bld_heights=np.array(bheights, dtype=float),
+        bld_heights=np.array(bheights, dtype=np.float32),
         tree_canopies=np.array(tcanopies, dtype=object),
     )
 

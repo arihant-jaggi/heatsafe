@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import json
 import math
 from datetime import datetime
@@ -126,6 +127,9 @@ def _init_once():
 
     # Precompute the static, reusable geometry once so per-hour scoring is cheap:
     # projected building/tree shadows-inputs, and projected per-edge sample points.
+    # These extract only what's needed (geometries/heights/sample points) into
+    # plain numpy arrays — the source GeoDataFrames below are no longer needed
+    # once this returns.
     STATE["shade_inputs"] = prepare_shade_inputs(buildings, trees)
     STATE["edge_samples"] = precompute_edge_samples(edges)
 
@@ -133,8 +137,26 @@ def _init_once():
     STATE["cooling_gdf"] = cooling_gdf
     STATE["trees_loaded"] = len(trees)
     STATE["buildings_loaded"] = len(buildings)
-    STATE["scored_cache"] = {}   # keyed by (date_str, hour) -> (edges_scored, conditions, solar)
+    # Holds only the CURRENT hour's derived state (never a per-hour cache of
+    # all 24 hours): a key marking which (hour, alpha, beta) is currently
+    # written into G's edge attributes, plus the small Conditions/SolarInfo
+    # dataclasses. The per-edge scored DataFrame and shade index are never
+    # retained here — see _ensure_weights_for_hour.
+    STATE["scored_key"] = None
+    STATE["cond"] = None
+    STATE["solar"] = None
     STATE["ready"] = True
+
+    # Buildings/trees/nodes/edges are large GeoDataFrames (geometry + tag
+    # columns) that have now been fully distilled into shade_inputs/edge_samples
+    # above; nothing below needs them. They're local variables (not stored in
+    # STATE) so refcounting should already free them, but pandas/geopandas
+    # objects commonly hold internal reference cycles that only the cyclic GC
+    # clears — explicit del + gc.collect() forces that reclaim now rather than
+    # leaving the peak-memory spike sitting around into steady-state traffic,
+    # which matters on Render's 512MB free tier.
+    del buildings, trees, nodes, edges
+    gc.collect()
 
 
 def _resolve_when(hour: Optional[int]) -> datetime:
@@ -145,19 +167,35 @@ def _resolve_when(hour: Optional[int]) -> datetime:
     return now.replace(hour=hour, minute=0, second=0, microsecond=0)
 
 
-def _scored_for(when: datetime) -> Tuple[gpd.GeoDataFrame, Conditions, Any]:
-    """Time-aware edge scores + weather for a given instant, cached per hour."""
-    key = (when.strftime("%Y-%m-%d"), when.hour)
-    cache = STATE["scored_cache"]
-    if key in cache:
-        return cache[key]
+def _ensure_weights_for_hour(when: datetime, alpha: float, beta: float) -> Tuple[Conditions, Any]:
+    """Attach time-aware routing weights to the graph for this hour + alpha/beta.
+
+    Holds at most ONE hour's worth of scored data at a time — never a cache of
+    all 24 hours. The per-edge scored DataFrame and shade STRtree are local to
+    this function and discarded (gc.collect()) immediately after their values
+    are written into the graph's edge attributes; only the tiny Conditions/
+    SolarInfo dataclasses are kept in STATE, to answer /conditions cheaply.
+
+    If the graph already has weights for this exact (hour, alpha, beta), skip
+    recomputation and reuse what's already attached.
+    """
+    key = (when.strftime("%Y-%m-%d"), when.hour, round(alpha, 3), round(beta, 3))
+    if STATE.get("scored_key") == key:
+        return STATE["cond"], STATE["solar"]
 
     cond = get_conditions(when, STATE["lat"], STATE["lon"])
     shade = build_shade_index(STATE["shade_inputs"], when, STATE["lat"], STATE["lon"])
+    solar = shade.solar
     edges_scored = score_edges_from_samples(STATE["edge_samples"], shade, cond)
-    result = (edges_scored, cond, shade.solar)
-    cache[key] = result
-    return result
+    attach_edge_weights_timeaware(STATE["G"], edges_scored, alpha, beta)
+
+    STATE["scored_key"] = key
+    STATE["cond"] = cond
+    STATE["solar"] = solar
+
+    del edges_scored, shade
+    gc.collect()
+    return cond, solar
 
 
 @app.on_event("startup")
@@ -384,10 +422,9 @@ def route(req: RouteRequest):
     if cached:
         return cached
 
-    # Time-aware per-edge scores (shadows + MRT) for this hour, then apply the
-    # request's alpha/beta to derive routing weights on the shared graph.
-    edges_scored, cond, solar = _scored_for(when)
-    attach_edge_weights_timeaware(G, edges_scored, req.alpha, req.beta)
+    # Time-aware per-edge scores (shadows + MRT) for this hour, folded into
+    # w_heat via the request's alpha/beta and written straight onto the graph.
+    cond, solar = _ensure_weights_for_hour(when, req.alpha, req.beta)
 
     try:
         r_fast = shortest_path(G, req.start.lat, req.start.lon, req.end.lat, req.end.lon, weight="w_fast")
