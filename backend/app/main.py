@@ -41,6 +41,7 @@ app.add_middleware(
         "https://heatsafe.co",
         "https://www.heatsafe.co",
         "https://heatsafe-pearl.vercel.app",
+        "https://heatsafe-production.up.railway.app",
         "http://localhost:5173",
     ],
     allow_credentials=True,
