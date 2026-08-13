@@ -6,17 +6,17 @@
     <rect x="50" y="64" width="22" height="88" rx="11" fill="#1E3A5F" />
     <rect x="50" y="93" width="70" height="22" rx="11" fill="#1E3A5F" />
 
-    <path d="M 122 60 A 24 24 0 0 1 122 108"
+    <path d="M 106.9 65.4 A 24 24 0 1 1 122 108"
           fill="none" stroke="#1E3A5F" stroke-width="22" stroke-linecap="round" />
 
-    <path d="M 122 108 A 24 24 0 0 0 122 156 Q 138 162 148 170"
+    <path d="M 122 108 A 24 24 0 1 0 137.1 150.6 Q 145 158 150 162"
           fill="none" stroke="#C2410C" stroke-width="22" stroke-linecap="round" />
 
-    <path d="M 122 108 A 24 24 0 0 0 122 156 Q 138 162 148 170"
+    <path d="M 122 108 A 24 24 0 1 0 137.1 150.6 Q 145 158 150 162"
           fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"
           stroke-dasharray="8 9" />
 
-    <path d="M146,56 L143.7,61.7 L138,64 L143.7,66.3 L146,72 L148.3,66.3 L154,64 L148.3,61.7 Z"
+    <path d="M148,49 L145,57 L137,60 L145,63 L148,71 L151,63 L159,60 L151,57 Z"
           fill="#EA580C" />
   </g>
 </svg>
