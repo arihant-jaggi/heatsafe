@@ -17,7 +17,7 @@ function CompareRow({ label, temp, max, tone }: { label: string; temp: number; m
   const { ref, inView } = useReveal<HTMLDivElement>(0.3);
   const shown = useCountUp(temp, inView, 1400, 1);
   return (
-    <div ref={ref} style={{ display: "grid", gridTemplateColumns: "110px 1fr 72px", alignItems: "center", gap: 16, marginBottom: 18 }}>
+    <div ref={ref} className="compare-row-grid">
       <div style={{ fontWeight: 600, color: "var(--ink)" }}>{label}</div>
       <LiquidBar pct={(temp / max) * 100} tone={tone} />
       <div style={{ textAlign: "right", fontWeight: 700, color: tone === "amber" ? "var(--amber-ink)" : "var(--navy)" }}>
@@ -119,7 +119,7 @@ export default function Landing() {
       <Reveal>
         <section className="card glass-bubble" style={{ padding: "30px 34px", margin: "8px 0 40px" }}>
           <div className="orb orb-a" /><div className="orb orb-b" /><div className="sheen" />
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 30, alignItems: "center" }}>
+          <div className="landing-cond-grid">
             <div>
               <div className="muted" style={{ fontSize: 13.5, marginBottom: 8 }}>A typical August afternoon</div>
               <div style={{ display: "flex", alignItems: "flex-start" }}>
@@ -128,7 +128,7 @@ export default function Landing() {
               </div>
               <div className="muted" style={{ fontSize: 13.5, marginTop: 10 }}>Feels like 99°F · dangerous for long walks</div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+            <div className="landing-cond-stats">
               {[
                 ["Air temp", "30°C"],
                 ["Humidity", "82%"],
@@ -154,7 +154,7 @@ export default function Landing() {
 
       {/* ---------------- THREE WALKS ---------------- */}
       <section className="section">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr", gap: 30, alignItems: "end", marginBottom: 34 }}>
+        <div className="walks-header-grid" style={{ marginBottom: 34 }}>
           <div>
             <Reveal className="eyebrow">Pick your trade-off</Reveal>
             <Reveal delay={60}>

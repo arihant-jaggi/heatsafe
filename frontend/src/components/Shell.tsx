@@ -1,4 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 
 const links = [
   { to: "/", label: "Home", end: true },
@@ -8,6 +9,14 @@ const links = [
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+
+  // Close the mobile menu whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="page">
       {/* animated background haze */}
@@ -26,7 +35,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <span className="brand-sub">Miami Beach</span>
             </span>
           </Link>
-          <nav className="nav-links">
+
+          <nav className={`nav-links ${menuOpen ? "mobile-open" : ""}`}>
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -38,6 +48,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </NavLink>
             ))}
           </nav>
+
+          <button
+            className={`hamburger-btn ${menuOpen ? "open" : ""}`}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span /><span /><span />
+          </button>
         </div>
       </header>
 

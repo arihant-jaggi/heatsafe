@@ -21,7 +21,7 @@ export default function About() {
         <p className="lead" style={{ marginTop: 20 }}>HeatSafe Routes was created by <b style={{ color: "var(--ink)" }}>Arihant Jaggi</b>.</p>
       </Reveal>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 40, marginTop: 40, alignItems: "start" }}>
+      <div className="bio-grid" style={{ marginTop: 40 }}>
         <Reveal>
           <div className="stack" style={{ gap: 20 }}>
             <p className="lead">

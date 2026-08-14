@@ -75,7 +75,7 @@ export default function App() {
       <Reveal>
         <section className="card glass-bubble" style={{ padding: "26px 30px", marginBottom: 34 }}>
           <div className="orb orb-a" /><div className="orb orb-b" /><div className="sheen" />
-          <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 26, alignItems: "center" }}>
+          <div className="cond-grid">
             <div>
               <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
                 Right now in Miami Beach{cond ? ` · ${cond.time_label}` : ""}
@@ -95,7 +95,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)" }}>
+            <div className="cond-stats">
               <div className="stat-tile"><div className="stat-label">Air temp</div><div className="stat-value">{cond ? cond.air_temp_c.toFixed(0) : "—"}<span className="u">°C</span></div></div>
               <div className="stat-tile"><div className="stat-label">Humidity</div><div className="stat-value">{cond ? cond.rh_pct.toFixed(0) : "—"}<span className="u">%</span></div></div>
               <div className="stat-tile"><div className="stat-label">In direct sun</div><div className="stat-value amber-t" style={{ color: "var(--amber-ink)" }}>{cond ? cond.peak_mrt_c.toFixed(0) : "—"}<span className="u">°C</span></div></div>
@@ -147,7 +147,7 @@ export default function App() {
           </div>
 
           <div className="field-label" style={{ marginBottom: 8 }}>When are you heading out?</div>
-          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+          <div className="time-row">
             <button className={`chip-btn ${hour === "" ? "on" : ""}`} onClick={() => setHour("")}>
               Now{cond && hour === "" ? ` · ${cond.time_label}` : ""}
             </button>
@@ -172,7 +172,7 @@ export default function App() {
             </span>
           </label>
 
-          <label style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 18, cursor: "pointer", fontSize: 13.5, color: "var(--slate)" }}>
+          <label className="check-row" style={{ marginBottom: 18 }}>
             <input type="checkbox" checked={showCooling} onChange={(e) => setShowCooling(e.target.checked)} />
             Show cooling &amp; rest spots
           </label>

@@ -46,8 +46,8 @@ export default function HowItWorks() {
             <Reveal
               key={n}
               delay={i * 110}
+              className="step-row-grid"
               style={{
-                display: "grid", gridTemplateColumns: "60px 210px 1fr", gap: 24, alignItems: "start",
                 padding: "26px 0", borderBottom: i < steps.length - 1 ? "1px solid var(--line-soft)" : "none",
               }}
             >
