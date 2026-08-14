@@ -443,7 +443,6 @@ body {
 
 /* ---------- phone tier ---------- */
 @media (max-width: 640px) {
-  .wrap { padding: 0 16px; }
   .section { padding: 48px 0; }
 
   /* Conditions banners: sidebar stat stacks above a compact, horizontally
@@ -468,6 +467,29 @@ body {
      one-liner effect; at phone widths that risks horizontal overflow, so
      let it wrap and shrink here (external !important beats inline non-!important). */
   .landing-page .display { white-space: normal !important; font-size: clamp(30px, 9vw, 42px) !important; }
+}
+
+/* ---------- mobile-only fixes (≤768px, desktop untouched) ---------- */
+@media (max-width: 768px) {
+  /* 1. Consistent 20px horizontal breathing room on every page. */
+  .wrap { padding: 0 20px; }
+
+  /* 2. "Where are you walking?" was pinned to an inline 34px that never
+     shrank and got cut off on narrow phones. */
+  .planner-title { font-size: 24px !important; }
+
+  /* 3. How it Works headline, ~20% smaller (its clamp() floor was 44px and
+     effectively flat below ~733px viewports, i.e. it never actually shrank
+     on any phone). */
+  .howitworks-title { font-size: clamp(35px, 4.8vw, 66px) !important; }
+
+  /* 4. Paragraph text overflowing the right edge: the 20px wrap padding above
+     already removes most of the pressure, but guarantee any long word/token
+     still wraps instead of forcing horizontal scroll. */
+  .lead { max-width: 100% !important; overflow-wrap: break-word; word-break: break-word; }
+
+  /* 5. More breathing room between the address input and the Map button. */
+  .autocomplete-row { gap: 14px !important; }
 }
 
 /* ---------- reduced motion ---------- */

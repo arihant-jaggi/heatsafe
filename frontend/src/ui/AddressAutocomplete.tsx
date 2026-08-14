@@ -94,7 +94,7 @@ export function AddressAutocomplete({
   return (
     <div ref={boxRef} style={{ position: "relative" }}>
       {label && <b>{label}</b>}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div className="autocomplete-row" style={{ display: "flex", gap: 8 }}>
         <input
           className="hs-input"
           value={q}

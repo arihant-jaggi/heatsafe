@@ -114,7 +114,7 @@ export default function App() {
 
       {/* ---------------- HEADING ---------------- */}
       <Reveal style={{ textAlign: "center", marginBottom: 26 }}>
-        <h1 className="h2 dyna-title" style={{ fontSize: 34 }}>Where are you walking?</h1>
+        <h1 className="h2 dyna-title planner-title" style={{ fontSize: 34 }}>Where are you walking?</h1>
         <p className="lead" style={{ maxWidth: 560, margin: "10px auto 0" }}>
           Set a start and a destination below, and we'll show you the fast way and the shady way
           side by side.

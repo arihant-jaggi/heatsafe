@@ -28,7 +28,7 @@ export default function HowItWorks() {
     <div className="wrap section">
       <Reveal className="eyebrow">Methodology</Reveal>
       <Reveal delay={60}>
-        <h1 className="display dyna-title" style={{ maxWidth: 900 }}>
+        <h1 className="display dyna-title howitworks-title" style={{ maxWidth: 900 }}>
           We do not optimise for <span className="amber-t">time</span> we optimise for <span className="navy-t">absorbed heat.</span>
         </h1>
       </Reveal>
