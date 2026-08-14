@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { Analytics } from "@vercel/analytics/react";
 import RouterApp from "./RouterApp";
 
 // Keep these imports so your existing app styles still work
@@ -12,5 +13,6 @@ import "leaflet/dist/leaflet.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <RouterApp />
+    <Analytics />
   </React.StrictMode>
 );
