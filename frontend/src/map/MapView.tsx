@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMapEvents } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, GeoJSON, Marker, Popup, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 
 type LatLon = { lat: number; lon: number };
@@ -30,6 +30,57 @@ function geoKey(g: any): string {
   } catch {
     return Math.random().toString();
   }
+}
+
+// Self-hosted basemap: Miami Beach streets, buildings and street trees drawn
+// from the router's own OSM data (built by backend/scripts/build_basemap.py),
+// so the map needs no third-party tile service or API key.
+const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const MAP_BG = "#0e1a2a";
+const BOUNDS: [[number, number], [number, number]] = [[25.75, -80.18], [25.91, -80.10]];
+
+type Basemap = { streets?: any; buildings?: any; trees?: any };
+
+function useBasemap(): Basemap {
+  const [layers, setLayers] = useState<Basemap>({});
+  useEffect(() => {
+    let alive = true;
+    for (const name of ["buildings", "streets", "trees"] as const) {
+      fetch(`/basemap/${name}.json`)
+        .then((r) => r.json())
+        .then((data) => alive && setLayers((prev) => ({ ...prev, [name]: data })))
+        .catch(() => {});
+    }
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return layers;
+}
+
+const STREET_STYLE: Record<string, { color: string; weight: number; opacity: number }> = {
+  major: { color: "#9db8d6", weight: 2.6, opacity: 0.85 },
+  minor: { color: "#4f6a8a", weight: 1.3, opacity: 0.8 },
+  foot: { color: "#3a5170", weight: 0.7, opacity: 0.55 },
+};
+
+const treeRenderer = L.canvas({ padding: 0.5 });
+function treeDot(_f: any, latlng: L.LatLng) {
+  return L.circleMarker(latlng, { renderer: treeRenderer, radius: 2.4, stroke: false, fillColor: "#4cc38a", fillOpacity: 0.75, interactive: false });
+}
+
+const WATER_LABELS: { pos: [number, number]; text: string }[] = [
+  { pos: [25.862, -80.104], text: "Atlantic Ocean" },
+  { pos: [25.805, -80.168], text: "Biscayne Bay" },
+];
+const waterIcon = (text: string) =>
+  L.divIcon({ html: `<span class="hs-water">${text}</span>`, className: "", iconSize: [140, 20], iconAnchor: [70, 10] });
+
+// Street trees only once zoomed in; at city scale they merge into a blob.
+function TreeLayer({ data }: { data: any }) {
+  const [zoom, setZoom] = useState(13);
+  useMapEvents({ zoomend: (e) => setZoom(e.target.getZoom()) });
+  return zoom >= 15 ? <GeoJSON data={data} interactive={false as any} pointToLayer={treeDot} /> : null;
 }
 
 const DRAW_MS = 1800;
@@ -79,6 +130,9 @@ export function MapView(props: {
   showCooling: boolean;
 }) {
   const center: [number, number] = [25.83, -80.13];
+  const basemap = useBasemap();
+  // Basemap on its own canvas (fast for ~35k shapes); routes stay SVG so they can animate.
+  const baseRenderer = useMemo(() => L.canvas({ padding: 0.5 }), []);
 
   const startIcon = useMemo(() => L.divIcon({ html: pinHtml("A", "#1e3a5f"), className: "", iconSize: [26, 26], iconAnchor: [13, 13] }), []);
   const endIcon = useMemo(() => L.divIcon({ html: pinHtml("B", "#e0870b"), className: "", iconSize: [26, 26], iconAnchor: [13, 13] }), []);
@@ -93,12 +147,45 @@ export function MapView(props: {
   };
 
   return (
-    <MapContainer center={center} zoom={12} style={{ height: "72vh", width: "100%" }}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
-      />
+    <MapContainer
+      center={center}
+      zoom={13}
+      minZoom={12}
+      maxZoom={18}
+      maxBounds={BOUNDS}
+      maxBoundsViscosity={0.8}
+      className="hs-map"
+      style={{ height: "72vh", width: "100%", background: MAP_BG }}
+    >
+      {basemap.buildings && (
+        <GeoJSON
+          data={basemap.buildings}
+          {...({ renderer: baseRenderer } as any)}
+          interactive={false as any}
+          style={() => ({ stroke: false, fillColor: "#1b2c42", fillOpacity: 1 }) as any}
+          {...({ attribution: OSM_ATTRIBUTION } as any)}
+        />
+      )}
+      {basemap.streets && (
+        <>
+          <GeoJSON
+            data={{ ...basemap.streets, features: basemap.streets.features.filter((f: any) => f.properties.c === "major") }}
+            {...({ renderer: baseRenderer } as any)}
+            interactive={false as any}
+            style={() => ({ color: "#5d86b3", weight: 7, opacity: 0.16 }) as any}
+          />
+          <GeoJSON
+            data={basemap.streets}
+            {...({ renderer: baseRenderer } as any)}
+            interactive={false as any}
+            style={(f: any) => STREET_STYLE[f?.properties?.c ?? "minor"] as any}
+          />
+        </>
+      )}
+      {WATER_LABELS.map((w) => (
+        <Marker key={w.text} position={w.pos} icon={waterIcon(w.text)} interactive={false} keyboard={false} />
+      ))}
+      {basemap.trees && <TreeLayer data={basemap.trees} />}
 
       {props.picking && <ClickPicker onPick={onPick} />}
 
@@ -121,7 +208,7 @@ export function MapView(props: {
         <GeoJSON
           key={`c-${geoKey(props.coolingRouteGeo)}`}
           data={props.coolingRouteGeo}
-          style={() => ({ color: "#0e7490", weight: 6, opacity: 0.9 }) as any}
+          style={() => ({ color: "#2dd4bf", weight: 6, opacity: 0.9 }) as any}
           eventHandlers={drawHandler()}
         />
       )}
@@ -140,14 +227,14 @@ export function MapView(props: {
           <GeoJSON
             key={`h-${geoKey(props.heatsafeGeo)}`}
             data={props.heatsafeGeo}
-            style={() => ({ color: "#1e3a5f", weight: 7, opacity: 0.98 }) as any}
+            style={() => ({ color: "#6cc4ff", weight: 7, opacity: 0.98 }) as any}
             eventHandlers={drawHandler()}
           />
           {/* comet overlay only on HeatSafe — starts after the draw completes */}
           <GeoJSON
             key={`hc-${geoKey(props.heatsafeGeo)}`}
             data={props.heatsafeGeo}
-            style={() => ({ color: "#7fb0e0", weight: 3, opacity: 0.9, className: "route-comet" }) as any}
+            style={() => ({ color: "#ffffff", weight: 3, opacity: 0.9, className: "route-comet" }) as any}
             interactive={false as any}
           />
         </>

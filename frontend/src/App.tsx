@@ -204,7 +204,7 @@ export default function App() {
           />
           <div className="map-legend">
             <span className="legend-item"><span className="legend-swatch" style={{ background: "#e0870b" }} />Fastest</span>
-            <span className="legend-item"><span className="legend-swatch" style={{ background: "#1e3a5f" }} />HeatSafe</span>
+            <span className="legend-item"><span className="legend-swatch" style={{ background: "#6cc4ff" }} />HeatSafe</span>
             {data?.cooling && <span className="legend-item"><span className="legend-swatch" style={{ background: "#0e7490" }} />Via A/C</span>}
           </div>
         </Reveal>
