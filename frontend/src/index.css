@@ -348,6 +348,9 @@ body {
 /* ---------- map ---------- */
 .map-shell { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow-card); }
 .leaflet-container { font-family: inherit; }
+.leaflet-container.hs-map .leaflet-control-attribution { background: rgba(14,26,42,0.75); color: #8ea6c2; }
+.leaflet-container.hs-map .leaflet-control-attribution a { color: #b9d2ee; }
+.hs-water { display: block; text-align: center; font-style: italic; font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(150,180,215,0.45); white-space: nowrap; pointer-events: none; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #fff; color: var(--ink); }
 .map-legend {
   position: absolute; left: 14px; bottom: 14px; z-index: 500; display: flex; gap: 14px;
@@ -500,4 +503,19 @@ body {
   }
   .reveal { opacity: 1 !important; transform: none !important; }
   .bar-fill { transition: none !important; }
+}
+
+/* Funding announcement */
+.funding-banner { position: relative; overflow: hidden; display: flex; align-items: center; gap: 40px; padding: 44px 52px; border-radius: 28px; background: #0b0a10; color: #f6f1ea; box-shadow: 0 30px 70px rgba(20, 16, 30, 0.28); }
+.funding-glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 12% 50%, rgba(168, 108, 190, 0.32), transparent 55%), radial-gradient(ellipse at 95% 0%, rgba(224, 135, 11, 0.28), transparent 50%); pointer-events: none; }
+.funding-logo { position: relative; width: 168px; height: 168px; flex: none; border-radius: 22px; }
+.funding-copy { position: relative; }
+.funding-eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #d9a9e8; }
+.funding-amount { margin-top: 6px; font-family: "DynaPuff", "Inter", ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: clamp(64px, 9vw, 128px); line-height: 0.95; letter-spacing: -0.02em; background: linear-gradient(90deg, #f6b23c, #f0c07a 55%, #e9c8f2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.funding-title { margin-top: 10px; font-size: clamp(20px, 2.2vw, 28px); font-weight: 600; color: #f6f1ea; }
+.funding-title b { color: #e9c8f2; }
+.funding-sub { margin: 12px 0 0; max-width: 560px; font-size: 15.5px; line-height: 1.6; color: rgba(246, 241, 234, 0.72); }
+@media (max-width: 768px) {
+  .funding-banner { flex-direction: column; align-items: flex-start; gap: 20px; padding: 30px 24px; border-radius: 22px; }
+  .funding-logo { width: 96px; height: 96px; border-radius: 16px; }
 }

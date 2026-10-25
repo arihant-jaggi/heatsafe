@@ -27,6 +27,29 @@ function CompareRow({ label, temp, max, tone }: { label: string; temp: number; m
   );
 }
 
+/* Funding announcement: LvlUp Ventures intent to fund. */
+function FundingBanner() {
+  const { ref, inView } = useReveal<HTMLDivElement>(0.3);
+  const amount = useCountUp(5000, inView, 1600, 0);
+  return (
+    <section className="section" style={{ paddingTop: 8, paddingBottom: 8 }}>
+      <div ref={ref} className="funding-banner">
+        <div className="funding-glow" aria-hidden="true" />
+        <img src="/lvlup-ventures.png" alt="LvlUp Ventures logo" className="funding-logo" />
+        <div className="funding-copy">
+          <div className="funding-eyebrow">Funding news</div>
+          <div className="funding-amount">${Math.round(amount).toLocaleString("en-US")}</div>
+          <div className="funding-title">Intent to fund from <b>LvlUp Ventures</b></div>
+          <p className="funding-sub">
+            The venture capital firm has offered HeatSafe Routes a $5K funding intent to help bring
+            heat-safe walking routes to more of Miami Beach.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function WalkCard({
   badge, badgeClass, eta, title, desc, temp, tempTone, shade, note, recommended,
 }: {
@@ -114,6 +137,8 @@ export default function Landing() {
           </Reveal>
         </div>
       </section>
+
+      <FundingBanner />
 
       {/* ---------------- CONDITIONS STRIP ---------------- */}
       <Reveal>
